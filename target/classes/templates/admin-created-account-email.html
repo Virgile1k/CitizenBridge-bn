@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Account Created</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333333; background-color: #f8f9fa; margin: 0; padding: 0;">
+<div style="max-width: 600px; margin: 20px auto; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+    <!-- Rwanda Flag Colors Stripe -->
+    <div style="height: 6px; display: flex;">
+        <div style="background-color: #00a0d8; flex: 1;"></div>
+        <div style="background-color: #fad201; flex: 1;"></div>
+        <div style="background-color: #20603d; flex: 1;"></div>
+    </div>
+
+    <!-- Header -->
+    <div style="background-color: #00a0d8; color: white; padding: 25px; text-align: center; border-bottom: 5px solid #fad201;">
+        <h1 style="margin: 0; font-size: 28px; font-weight: 600;">CitizenBridge</h1>
+    </div>
+
+    <!-- Content -->
+    <div style="background-color: white; padding: 30px;">
+        <p style="font-size: 18px; font-weight: 600; margin-bottom: 15px;">Dear <span th:text="${user.firstName} + ' ' + ${user.lastName}"></span>,</p>
+        <p style="margin-bottom: 25px; font-size: 16px;">An administrator has created an account for you on CitizenBridge.</p>
+
+        <div style="background-color: #f8f9fa; border-left: 4px solid #00a0d8; padding: 15px; margin-bottom: 25px;">
+            <p style="margin: 0 0 10px 0; font-weight: 600;">Your account details:</p>
+            <p style="margin: 0 0 5px 0;"><strong>Username:</strong> <span th:text="${user.username}"></span></p>
+            <p style="margin: 0 0 5px 0;"><strong>Email:</strong> <span th:text="${user.email}"></span></p>
+            <p style="margin: 0 0 5px 0;"><strong>Role:</strong> <span th:text="${userRole}"></span></p>
+            <p style="margin: 0; font-weight: 600; color: #d12c2c;">Please use the temporary password provided to you and change it after your first login.</p>
+        </div>
+
+        <p style="margin-bottom: 25px; font-size: 16px;">You can now log in and start using CitizenBridge's features to help serve citizens and manage public service requests.</p>
+
+        <div style="text-align: center;">
+            <a href="#" th:href="${loginUrl}" style="display: inline-block; background-color: #00a0d8; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: 500; margin: 20px 0; border: none; cursor: pointer;">Log In to Your Account</a>
+        </div>
+
+        <div style="background-color: #fef9e6; border-left: 4px solid #fad201; padding: 15px; margin: 25px 0;">
+            <p style="margin: 0; font-weight: 600;">For security reasons, please change your password immediately after your first login.</p>
+        </div>
+
+        <p style="margin-bottom: 25px; font-size: 16px;">If you have any questions or need assistance, please contact your administrator or our support team.</p>
+
+        <div style="margin-top: 30px; font-style: italic;">
+            <p>Best regards,<br>CitizenBridge Team</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="background-color: #20603d; color: white; padding: 20px; text-align: center; font-size: 14px;">
+        <p>© 2025 CitizenBridge | All Rights Reserved</p>
+        <p style="margin: 5px 0 0 0;">This email was sent by the CitizenBridge system. Please do not reply to this message.</p>
+    </div>
+</div>
+</body>
+</html>
