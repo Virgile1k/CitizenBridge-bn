@@ -1,26 +1,34 @@
-package com.citizenbridge.citizenbridge.service;
+package com.citizenbridge.citizenbridge.security;
 
-import com.citizenbridge.citizenbridge.repository.UserRepository;
+import com.citizenbridge.citizenbridge.model.Users;
+import com.citizenbridge.citizenbridge.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
     @Autowired
-    private UserRepository userRepository;
+    private UsersRepository usersRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
+        Users users = usersRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+
+        // Create a single authority from the user's role
+        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + users.getRole().name());
+
         return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUsername())
-                .password(user.getPasswordHash())
-                .roles("USER") // Adjust roles as needed
+                .withUsername(users.getUsername())
+                .password(users.getPasswordHash())
+                .authorities(Collections.singletonList(authority))
                 .build();
     }
 }

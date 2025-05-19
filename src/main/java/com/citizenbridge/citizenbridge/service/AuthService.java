@@ -1,10 +1,6 @@
 package com.citizenbridge.citizenbridge.service;
 
-import com.citizenbridge.citizenbridge.dtos.AdminUserCreateRequest;
-import com.citizenbridge.citizenbridge.dtos.LoginRequest;
-import com.citizenbridge.citizenbridge.dtos.LoginResponse;
-import com.citizenbridge.citizenbridge.dtos.SignupRequest;
-import com.citizenbridge.citizenbridge.dtos.SignupResponse;
+import com.citizenbridge.citizenbridge.dtos.*;
 import com.citizenbridge.citizenbridge.enums.UserRole;
 import com.citizenbridge.citizenbridge.exceptions.AuthException;
 import com.citizenbridge.citizenbridge.model.Roles;
@@ -14,7 +10,6 @@ import com.citizenbridge.citizenbridge.repository.RolesRepository;
 import com.citizenbridge.citizenbridge.repository.UserRolesRepository;
 import com.citizenbridge.citizenbridge.repository.UsersRepository;
 import com.citizenbridge.citizenbridge.security.JwtUtil;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,16 +79,69 @@ public class AuthService {
                 throw new AuthException.AccountDeactivatedException("Your account has been deactivated. Please contact the administrator.");
             }
 
-            String token = jwtUtil.generateToken(userDetails);
+            // Generate tokens
+            String token = jwtUtil.generateToken(userDetails, user);
             String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
-            return new LoginResponse(token, "Bearer", jwtExpiration / 1000, refreshToken);
+            // Get primary role (assuming the first role is the primary one)
+            UserRole primaryRole = getUserPrimaryRole(user.getId());
+
+            // Return response with user details
+            return new LoginResponse(
+                    token,
+                    "Bearer",
+                    jwtExpiration / 1000,
+                    refreshToken,
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    primaryRole
+            );
         } catch (AuthException.AccountDeactivatedException e) {
             // Rethrow account-specific exceptions
             throw e;
         } catch (Exception e) {
             throw new AuthException.InvalidCredentialsException("Invalid username or password");
         }
+    }
+
+    /**
+     * Gets the primary role for a user (the first one in their role list)
+     */
+    @Transactional(readOnly = true)
+    public UserRole getUserPrimaryRole(UUID userId) {
+        List<UserRole> roles = getUserRoles(userId);
+        return roles.isEmpty() ? UserRole.USER : roles.get(0);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserRole> getUserRoles(UUID userId) {
+        return userRolesRepository.findByUserId(userId)
+                .stream()
+                .map(userRole -> userRole.getRole().getName())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Gets user details including their primary role
+     */
+    @Transactional(readOnly = true)
+    public UserDTO getUserDetails(UUID userId) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new AuthException.UserNotFoundException("User not found with ID: " + userId));
+
+        UserRole primaryRole = getUserPrimaryRole(userId);
+
+        return new UserDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                primaryRole
+        );
     }
 
     @Transactional
@@ -143,9 +191,6 @@ public class AuthService {
         );
     }
 
-    /**
-     * Creates a new admin/agency user (for admin use)
-     */
     @Transactional
     public UUID createAdministrativeUser(AdminUserCreateRequest request) {
         // Check if username already exists
@@ -210,14 +255,6 @@ public class AuthService {
         return savedUser.getId();
     }
 
-    @Transactional(readOnly = true)
-    public List<UserRole> getUserRoles(UUID userId) {
-        return userRolesRepository.findByUserId(userId)
-                .stream()
-                .map(userRole -> userRole.getRole().getName())
-                .collect(Collectors.toList());
-    }
-
     @Transactional
     public void assignRoleToUser(UUID userId, UserRole roleName) {
         // Find or create the role
@@ -236,9 +273,6 @@ public class AuthService {
         }
     }
 
-    /**
-     * Updates roles for a user and sends notification
-     */
     @Transactional
     public void updateUserRoles(UUID userId, List<UserRole> newRoles) {
         // First check if user exists
@@ -257,9 +291,6 @@ public class AuthService {
         emailService.sendRoleChangeEmail(user, newRoles);
     }
 
-    /**
-     * Resets a user's password and sends notification
-     */
     @Transactional
     public void resetPassword(UUID userId, String newPassword) {
         Users user = usersRepository.findById(userId)
@@ -276,9 +307,6 @@ public class AuthService {
         emailService.sendPasswordResetEmail(user, resetLink);
     }
 
-    /**
-     * Activates or deactivates a user account
-     */
     @Transactional
     public void updateAccountStatus(UUID userId, boolean isActive) {
         Users user = usersRepository.findById(userId)

@@ -1,9 +1,6 @@
 package com.citizenbridge.citizenbridge.controller;
 
-import com.citizenbridge.citizenbridge.dtos.LoginRequest;
-import com.citizenbridge.citizenbridge.dtos.LoginResponse;
-import com.citizenbridge.citizenbridge.dtos.SignupRequest;
-import com.citizenbridge.citizenbridge.dtos.SignupResponse;
+import com.citizenbridge.citizenbridge.dtos.*;
 import com.citizenbridge.citizenbridge.enums.UserRole;
 import com.citizenbridge.citizenbridge.service.AuthService;
 import jakarta.validation.Valid;
@@ -11,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,12 +33,25 @@ public class AuthController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getCurrentUser(Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        UserDTO userDetails = authService.getUserDetails(userId);
+        return ResponseEntity.ok(userDetails);
+    }
+
     @GetMapping("/roles")
     public ResponseEntity<List<UserRole>> getCurrentUserRoles(Authentication authentication) {
-        // Get current user ID from authentication
         UUID userId = UUID.fromString(authentication.getName());
         List<UserRole> roles = authService.getUserRoles(userId);
         return ResponseEntity.ok(roles);
+    }
+
+    @GetMapping("/role")
+    public ResponseEntity<UserRole> getCurrentUserPrimaryRole(Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        UserRole primaryRole = authService.getUserPrimaryRole(userId);
+        return ResponseEntity.ok(primaryRole);
     }
 
     @PostMapping("/roles/{userId}/{role}")

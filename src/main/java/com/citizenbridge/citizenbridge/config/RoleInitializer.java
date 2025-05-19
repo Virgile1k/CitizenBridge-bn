@@ -5,6 +5,7 @@ import com.citizenbridge.citizenbridge.model.Roles;
 import com.citizenbridge.citizenbridge.repository.RolesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.util.Arrays;
  * This component initializes the default roles in the database on application startup
  */
 @Component
+@Order(1)
 public class RoleInitializer implements CommandLineRunner {
 
     @Autowired

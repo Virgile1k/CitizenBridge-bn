@@ -1,9 +1,11 @@
 package com.citizenbridge.citizenbridge.security;
 
+import com.citizenbridge.citizenbridge.model.Users;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +14,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtUtil {
@@ -49,8 +52,37 @@ public class JwtUtil {
         return Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token).getBody();
     }
 
+    public String generateToken(UserDetails userDetails, Users user) {
+        Map<String, Object> claims = new HashMap<>();
+
+        // Add single role (primary role) to claims
+        String primaryRole = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElse("ROLE_USER");
+
+        claims.put("role", primaryRole);
+
+        // Add user details to claims
+        claims.put("userId", user.getId().toString());
+        claims.put("username", user.getUsername());
+        claims.put("email", user.getEmail());
+        claims.put("firstName", user.getFirstName());
+        claims.put("lastName", user.getLastName());
+
+        return createToken(claims, userDetails.getUsername(), expiration);
+    }
+
+    // Original generateToken method (kept for backward compatibility)
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+
+        // Add roles to claims
+        claims.put("role", userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElse("ROLE_USER"));
+
         return createToken(claims, userDetails.getUsername(), expiration);
     }
 
@@ -89,6 +121,16 @@ public class JwtUtil {
     public Boolean isPasswordResetToken(String token) {
         Claims claims = extractAllClaims(token);
         return "password_reset".equals(claims.get("token_type"));
+    }
+
+    public String extractRole(String token) {
+        Claims claims = extractAllClaims(token);
+        return (String) claims.get("role");
+    }
+
+    public String extractUserId(String token) {
+        Claims claims = extractAllClaims(token);
+        return (String) claims.get("userId");
     }
 
     private boolean isTokenExpired(String token) {

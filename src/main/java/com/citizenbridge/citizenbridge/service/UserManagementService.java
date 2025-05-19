@@ -4,7 +4,6 @@ import com.citizenbridge.citizenbridge.dtos.AdminUserCreateRequest;
 import com.citizenbridge.citizenbridge.dtos.PasswordChangeRequest;
 import com.citizenbridge.citizenbridge.dtos.UserProfileResponse;
 import com.citizenbridge.citizenbridge.dtos.UserUpdateRequest;
-//import com.citizenbridge.citizenbridge.dtos.PasswordChangeRequest;
 import com.citizenbridge.citizenbridge.enums.UserRole;
 import com.citizenbridge.citizenbridge.exceptions.AuthException;
 import com.citizenbridge.citizenbridge.exceptions.ResourceNotFoundException;
@@ -23,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -78,6 +78,12 @@ public class UserManagementService {
         user.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
         user.setIsActive(true);
 
+        // Set the primary role - updated to use the role field directly
+        UserRole primaryRole = request.getRoles() != null && !request.getRoles().isEmpty()
+                ? request.getRoles().get(0)
+                : UserRole.AGENCY_REP;
+        user.setRole(primaryRole);
+
         // Set organization or department if provided
         try {
             ObjectNode preferencesNode = objectMapper.createObjectNode();
@@ -98,16 +104,6 @@ public class UserManagementService {
 
         Users savedUser = usersRepository.save(user);
 
-        // Assign roles to the user
-        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
-            for (UserRole role : request.getRoles()) {
-                authService.assignRoleToUser(savedUser.getId(), role);
-            }
-        } else {
-            // Assign default AGENCY_REP role if no roles specified
-            authService.assignRoleToUser(savedUser.getId(), UserRole.AGENCY_REP);
-        }
-
         return savedUser.getId();
     }
 
@@ -120,7 +116,10 @@ public class UserManagementService {
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
 
-        List<UserRole> roles = authService.getUserRoles(userId);
+        // Use the direct role from the entity instead of authService
+        List<UserRole> roles = user.getRole() != null ?
+                Collections.singletonList(user.getRole()) :
+                Collections.emptyList();
 
         UserProfileResponse response = new UserProfileResponse();
         response.setId(user.getId());
@@ -133,6 +132,8 @@ public class UserManagementService {
         response.setIsActive(user.getIsActive());
         response.setCreatedAt(user.getCreatedAt());
         response.setUpdatedAt(user.getUpdatedAt());
+
+        // Full name is automatically derived via getFullName() method in the DTO
 
         // Generate profile image URL if image key exists
         if (user.getProfileImageKey() != null && !user.getProfileImageKey().isEmpty()) {
@@ -355,10 +356,18 @@ public class UserManagementService {
                     response.setEmail(user.getEmail());
                     response.setFirstName(user.getFirstName());
                     response.setLastName(user.getLastName());
-                    response.setRoles(authService.getUserRoles(user.getId()));
+
+                    // Use the direct role from the entity instead of authService
+                    List<UserRole> roles = user.getRole() != null ?
+                            Collections.singletonList(user.getRole()) :
+                            Collections.emptyList();
+                    response.setRoles(roles);
+
                     response.setIsActive(user.getIsActive());
                     response.setCreatedAt(user.getCreatedAt());
                     response.setUpdatedAt(user.getUpdatedAt());
+
+                    // Full name is automatically derived via getFullName() method in the DTO
 
                     // Generate profile image URL if image key exists
                     if (user.getProfileImageKey() != null && !user.getProfileImageKey().isEmpty()) {
@@ -396,14 +405,13 @@ public class UserManagementService {
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public void updateUserRoles(UUID userId, List<UserRole> roles) {
-        // First check if user exists
-        if (!usersRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found with ID: " + userId);
-        }
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
 
-        // Update user roles
-        for (UserRole role : roles) {
-            authService.assignRoleToUser(userId, role);
+        // Update the user's role to the first role in the list
+        if (roles != null && !roles.isEmpty()) {
+            user.setRole(roles.get(0));
+            usersRepository.save(user);
         }
     }
 

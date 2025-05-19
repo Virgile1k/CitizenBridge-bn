@@ -12,6 +12,7 @@ import java.sql.Timestamp;
 @Entity
 @Table(name = "roles")
 public class Roles {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -27,12 +28,11 @@ public class Roles {
     @Column(name = "created_at", nullable = false)
     private Timestamp createdAt;
 
-    public Roles() {
-    }
+    public Roles() {}
 
     public Roles(UserRole name) {
         this.name = name;
         this.description = name.getDescription();
         this.createdAt = new Timestamp(System.currentTimeMillis());
     }
-    }
+}

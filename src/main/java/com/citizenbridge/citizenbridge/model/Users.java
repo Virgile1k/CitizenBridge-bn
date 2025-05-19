@@ -1,5 +1,6 @@
 package com.citizenbridge.citizenbridge.model;
 
+import com.citizenbridge.citizenbridge.enums.UserRole;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "users")
 public class Users {
+
     @Id
     @Column(name = "id", columnDefinition = "UUID")
     private UUID id;
@@ -44,7 +46,11 @@ public class Users {
     @Column(name = "preferences", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
     private JsonNode preferences;
-    // Changed from String to JsonNode
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private UserRole role;
+
     @Column(name = "profile_image_key")
     private String profileImageKey;
 
@@ -54,7 +60,6 @@ public class Users {
     @Column(name = "updated_at", nullable = false)
     private Timestamp updatedAt;
 
-    // This helps with type conversion in PostgreSQL
     @PrePersist
     protected void onCreate() {
         if (id == null) {
@@ -71,13 +76,14 @@ public class Users {
             isActive = true;
         }
         if (preferences == null) {
-            // Create an empty JSON object as default
             try {
                 preferences = new ObjectMapper().readTree("{}");
             } catch (Exception e) {
-                // Fallback if JSON parsing fails
                 System.err.println("Failed to create default preferences: " + e.getMessage());
             }
+        }
+        if (role == null) {
+            role = UserRole.USER;
         }
     }
 

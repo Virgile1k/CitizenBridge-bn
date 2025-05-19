@@ -1,4 +1,3 @@
-
 package com.citizenbridge.citizenbridge.dtos;
 
 import com.citizenbridge.citizenbridge.enums.UserRole;
@@ -11,15 +10,11 @@ import java.util.UUID;
 @AllArgsConstructor
 @Getter
 @Setter
-public class LoginResponse {
-    private String token;
-    private String tokenType = "Bearer";
-    private Long expiresIn;
-    private String refreshToken;
-    private UUID userId;
+public class UserDTO {
+    private UUID id;
     private String username;
     private String email;
     private String firstName;
     private String lastName;
-    private UserRole role; // Changed from Set<String> roles to UserRole role
+    private UserRole role; // Primary role of the user
 }
